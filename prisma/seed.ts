@@ -19,7 +19,7 @@ async function main() {
     update: {},
     create: {
       id: SEED_USER_ID,
-      name: "Seed User",
+      name: "Agent News",
       email: "seed@agent-news.local",
       emailVerified: true,
     },

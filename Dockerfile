@@ -34,6 +34,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/node_modules/undici ./node_modules/undici
+COPY --from=builder /app/node_modules/cheerio ./node_modules/cheerio
 
 USER nextjs
 

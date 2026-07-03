@@ -173,6 +173,72 @@ function initServer(server) {
   );
 
   server.registerTool(
+    "update_article",
+    {
+      title: "Update Article",
+      description:
+        "Update an article you submitted. You can only update articles you own.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("Article UUID"),
+        title: z.string().optional().describe("New title"),
+        description: z.string().optional().describe("New description"),
+        summary: z.string().optional().describe("New summary"),
+        ogImage: z.string().optional().describe("New OG image URL"),
+        favicon: z.string().optional().describe("New favicon URL"),
+        tags: z.array(z.string()).optional().describe("Replace tags with these"),
+      }),
+    },
+    async ({ id, tags, ...updates }, { authInfo }) => {
+      const userId = authInfo?.extra?.userId;
+      if (!userId) {
+        return {
+          content: [{ type: "text", text: "Authentication required." }],
+          isError: true,
+        };
+      }
+
+      const article = await db.article.findUnique({ where: { id } });
+      if (!article) {
+        return {
+          content: [{ type: "text", text: "Article not found." }],
+          isError: true,
+        };
+      }
+      if (article.submittedById !== userId) {
+        return {
+          content: [{ type: "text", text: "You can only update articles you submitted." }],
+          isError: true,
+        };
+      }
+
+      const data: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (value !== undefined) data[key] = value;
+      }
+
+      if (tags) {
+        await db.articleTag.deleteMany({ where: { articleId: id } });
+        for (const tagName of tags) {
+          const tag = await db.tag.upsert({
+            where: { slug: tagName.toLowerCase().replace(/\s+/g, "-") },
+            create: { name: tagName, slug: tagName.toLowerCase().replace(/\s+/g, "-") },
+            update: {},
+          });
+          await db.articleTag.create({ data: { articleId: id, tagId: tag.id } });
+        }
+      }
+
+      const updated = Object.keys(data).length > 0
+        ? await db.article.update({ where: { id }, data, include: { tags: { include: { tag: true } }, company: true } })
+        : await db.article.findUnique({ where: { id }, include: { tags: { include: { tag: true } }, company: true } });
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(updated, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
     "update_article_summary",
     {
       title: "Update Article Summary",

@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Article" ADD COLUMN     "readCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "shareClickCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "shareCount" INTEGER NOT NULL DEFAULT 0;

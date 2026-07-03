@@ -6,7 +6,11 @@ import { notFound } from "next/navigation";
 import { db } from "~/server/db";
 import { getArticleById, getRelatedArticles } from "~/server/services/article";
 import { ArticleEntry } from "~/app/_components/article-entry";
+import { ReadArticleButton } from "~/app/_components/read-article-button";
 import { ShareButton } from "~/app/_components/share-button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { EyeIcon } from "@hugeicons/core-free-icons";
+import { Share01Icon } from "@hugeicons/core-free-icons";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -141,6 +145,24 @@ export default async function ArticleDetailPage({ params }: Props) {
             <span>Submitted by {article.submittedBy.name}</span>
           </>
         )}
+
+        {(article.readCount > 0 || article.shareCount > 0) && (
+          <>
+            <span className="text-border">&middot;</span>
+            {article.readCount > 0 && (
+              <span className="flex items-center gap-1">
+                <HugeiconsIcon icon={EyeIcon} size={14} />
+                {article.readCount}
+              </span>
+            )}
+            {article.shareCount > 0 && (
+              <span className="flex items-center gap-1">
+                <HugeiconsIcon icon={Share01Icon} size={14} />
+                {article.shareCount}
+              </span>
+            )}
+          </>
+        )}
       </div>
 
       {article.tags.length > 0 && (
@@ -164,15 +186,8 @@ export default async function ArticleDetailPage({ params }: Props) {
       )}
 
       <div className="mt-8 flex gap-3">
-        <ShareButton title={article.title} />
-        <a
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 rounded-md bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          Read Article &rarr;
-        </a>
+        <ShareButton title={article.title} articleId={article.id} />
+        <ReadArticleButton url={article.url} articleId={article.id} />
       </div>
 
       {companyArticles.length > 0 && (

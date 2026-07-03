@@ -124,4 +124,22 @@ export const articleRouter = createTRPCRouter({
   listTags: publicProcedure.query(async ({ ctx }) => {
     return listTags(ctx.db);
   }),
+
+  trackRead: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.article.update({
+        where: { id: input.id },
+        data: { readCount: { increment: 1 } },
+      });
+    }),
+
+  trackShare: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.article.update({
+        where: { id: input.id },
+        data: { shareCount: { increment: 1 } },
+      });
+    }),
 });

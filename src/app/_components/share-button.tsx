@@ -1,12 +1,17 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { api } from "~/trpc/react";
 
-export function ShareButton({ title }: { title: string }) {
+export function ShareButton({ title, articleId }: { title: string; articleId: string }) {
   const [copied, setCopied] = useState(false);
+  const trackShare = api.article.trackShare.useMutation();
 
   const handleShare = useCallback(async () => {
-    const url = window.location.href;
+    const appUrl = window.location.origin;
+    const url = `${appUrl}/r/${articleId}`;
+
+    trackShare.mutate({ id: articleId });
 
     if (navigator.share) {
       try {
@@ -20,7 +25,7 @@ export function ShareButton({ title }: { title: string }) {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [title]);
+  }, [title, articleId, trackShare]);
 
   return (
     <button

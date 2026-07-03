@@ -236,6 +236,6 @@ const mcpHandler = createMcpHandler(initServer, {}, {
   maxDuration: 60,
 });
 
-const handler = withMcpAuth(mcpHandler, verifyToken, { required: false });
+const handler = withMcpAuth(mcpHandler, verifyToken, { required: true });
 
 export { handler as GET, handler as POST, handler as DELETE };

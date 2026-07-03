@@ -10,6 +10,7 @@ import {
   listTags,
   getArticleById,
   getArticleByUrl,
+  updateArticleSummary,
 } from "~/server/services/article";
 
 const baseUrl =
@@ -91,6 +92,12 @@ function initServer(server) {
         sourceDomain: z.string().optional().describe("Source domain name"),
         publishedAt: z.string().optional().describe("ISO date string"),
         tags: z.array(z.string()).optional().describe("Tags to apply"),
+        summary: z
+          .string()
+          .optional()
+          .describe(
+            "A short and concise summary to give the reader a brief insight into what the article is about",
+          ),
       }),
     },
     async (input, { authInfo }) => {
@@ -154,6 +161,64 @@ function initServer(server) {
           content: [{ type: "text", text: "Article not found" }],
         };
       }
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(article, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "update_article_summary",
+    {
+      title: "Update Article Summary",
+      description:
+        "Add or update the summary of an existing article. Requires authentication.",
+      inputSchema: z.object({
+        articleId: z.string().uuid().optional().describe("Article UUID"),
+        url: z.string().url().optional().describe("Article URL"),
+        summary: z
+          .string()
+          .describe(
+            "A short and concise summary to give the reader a brief insight into what the article is about",
+          ),
+      }),
+    },
+    async ({ articleId, url, summary }, { authInfo }) => {
+      const userId = authInfo?.extra?.userId;
+      if (!userId) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Authentication required. Please connect with OAuth first.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (!articleId && !url) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Either articleId or url must be provided.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const article = await updateArticleSummary(db, {
+        articleId,
+        url,
+        summary,
+      });
       return {
         content: [
           {

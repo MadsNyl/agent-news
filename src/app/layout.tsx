@@ -32,7 +32,7 @@ export default function RootLayout({
     <html lang="en" className={cn("dark", geist.variable, merriweather.variable)}>
       <body>
         <TRPCReactProvider>
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="relative z-10">
             <NavBar />
           </div>
           {children}

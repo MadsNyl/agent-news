@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 interface Article {
   id: string;
@@ -40,10 +41,8 @@ function ArticleCard({ article }: { article: Article }) {
       : article.publishedAt;
 
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={`/articles/${article.id}`}
       className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-150 ease-out hover:border-muted-foreground/25"
     >
       <div className="aspect-[16/9] overflow-hidden">
@@ -106,7 +105,7 @@ function ArticleCard({ article }: { article: Article }) {
           )}
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -117,10 +116,8 @@ function ArticleRow({ article }: { article: Article }) {
       : article.publishedAt;
 
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={`/articles/${article.id}`}
       className="group flex gap-4 px-4 py-5 transition-colors duration-150 ease-out hover:bg-card"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -199,7 +196,7 @@ function ArticleRow({ article }: { article: Article }) {
           unoptimized={!!article.ogImage}
         />
       </div>
-    </a>
+    </Link>
   );
 }
 

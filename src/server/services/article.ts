@@ -20,6 +20,15 @@ function deriveSourceDomain(url: string): string {
   }
 }
 
+function domainToName(domain: string): string {
+  return domain
+    .replace(/^www\./, "")
+    .replace(/\.(com|org|net|io|co|ai|dev|tech|news|blog)$/i, "")
+    .split(".")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export async function extractMetadata(url: string): Promise<ArticleDraft> {
   const sourceDomain = deriveSourceDomain(url);
   const emptyDraft: ArticleDraft = {
@@ -106,6 +115,7 @@ export async function createArticle(
     sourceDomain?: string;
     publishedAt?: string | null;
     tags?: string[];
+    summary?: string | null;
   },
   userId: string,
 ) {
@@ -114,16 +124,28 @@ export async function createArticle(
     input.favicon ??
     `https://www.google.com/s2/favicons?domain=${sourceDomain}&sz=32`;
 
+  const company = await db.company.upsert({
+    where: { domain: sourceDomain },
+    update: {},
+    create: {
+      name: domainToName(sourceDomain),
+      domain: sourceDomain,
+      logoUrl: `https://www.google.com/s2/favicons?domain=${sourceDomain}&sz=128`,
+    },
+  });
+
   const article = await db.article.create({
     data: {
       url: input.url,
       title: input.title,
       description: input.description ?? null,
+      summary: input.summary ?? null,
       ogImage: input.ogImage ?? null,
       favicon,
       sourceDomain,
       publishedAt: input.publishedAt ? new Date(input.publishedAt) : null,
       submittedById: userId,
+      companyId: company.id,
     },
   });
 
@@ -143,7 +165,11 @@ export async function createArticle(
 
   return db.article.findUniqueOrThrow({
     where: { id: article.id },
-    include: { tags: { include: { tag: true } }, submittedBy: { select: { name: true } } },
+    include: {
+      tags: { include: { tag: true } },
+      submittedBy: { select: { name: true } },
+      company: true,
+    },
   });
 }
 
@@ -315,14 +341,22 @@ export async function searchArticles(
 export async function getArticleById(db: PrismaClient, id: string) {
   return db.article.findUnique({
     where: { id },
-    include: { tags: { include: { tag: true } }, submittedBy: { select: { name: true } } },
+    include: {
+      tags: { include: { tag: true } },
+      submittedBy: { select: { name: true } },
+      company: true,
+    },
   });
 }
 
 export async function getArticleByUrl(db: PrismaClient, url: string) {
   return db.article.findUnique({
     where: { url },
-    include: { tags: { include: { tag: true } }, submittedBy: { select: { name: true } } },
+    include: {
+      tags: { include: { tag: true } },
+      submittedBy: { select: { name: true } },
+      company: true,
+    },
   });
 }
 
@@ -337,4 +371,91 @@ export async function listTags(db: PrismaClient) {
     slug: t.slug,
     count: t._count.articles,
   }));
+}
+
+export async function updateArticleSummary(
+  db: PrismaClient,
+  input: { articleId?: string; url?: string; summary: string },
+) {
+  const where = input.articleId
+    ? { id: input.articleId }
+    : input.url
+      ? { url: input.url }
+      : null;
+
+  if (!where) {
+    throw new Error("Either articleId or url must be provided");
+  }
+
+  return db.article.update({
+    where,
+    data: { summary: input.summary },
+    include: {
+      tags: { include: { tag: true } },
+      submittedBy: { select: { name: true } },
+      company: true,
+    },
+  });
+}
+
+export async function listCompanies(db: PrismaClient) {
+  return db.company.findMany({
+    include: { _count: { select: { articles: true } } },
+    orderBy: { articles: { _count: "desc" } },
+  });
+}
+
+export async function getCompanyByDomain(db: PrismaClient, domain: string) {
+  return db.company.findUnique({
+    where: { domain },
+    include: {
+      articles: {
+        orderBy: [{ publishedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }],
+        include: {
+          tags: { include: { tag: true } },
+          submittedBy: { select: { name: true } },
+        },
+      },
+    },
+  });
+}
+
+export async function getRelatedArticles(
+  db: PrismaClient,
+  articleId: string,
+  tagIds: string[],
+  excludeIds: string[],
+  limit: number = 3,
+) {
+  if (tagIds.length === 0) return [];
+
+  const allExcluded = [articleId, ...excludeIds];
+
+  const results = await db.$queryRaw<
+    Array<{
+      id: string;
+      url: string;
+      title: string;
+      description: string | null;
+      ogImage: string | null;
+      favicon: string | null;
+      sourceDomain: string;
+      publishedAt: Date | null;
+      createdAt: Date;
+      sharedTags: bigint;
+    }>
+  >(Prisma.sql`
+    SELECT a.id, a.url, a.title, a.description, a."ogImage", a.favicon,
+           a."sourceDomain", a."publishedAt", a."createdAt",
+           COUNT(at2."tagId") AS "sharedTags"
+    FROM "Article" a
+    JOIN "ArticleTag" at2 ON at2."articleId" = a.id
+    WHERE at2."tagId" = ANY(${tagIds}::uuid[])
+      AND a.id != ALL(${allExcluded}::uuid[])
+    GROUP BY a.id
+    ORDER BY "sharedTags" DESC, a."createdAt" DESC
+    LIMIT ${limit}
+  `);
+
+  return results.map((r) => ({ ...r, sharedTags: Number(r.sharedTags) }));
 }

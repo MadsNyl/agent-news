@@ -22,21 +22,36 @@ model Article {
   url           String                   @unique
   title         String
   description   String?
+  summary       String?
   ogImage       String?
   favicon       String?
   sourceDomain  String
   publishedAt   DateTime?
   submittedById String
+  companyId     String?                  @db.Uuid
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
   searchVector  Unsupported("tsvector")?
 
   submittedBy User         @relation(fields: [submittedById], references: [id])
+  company     Company?     @relation(fields: [companyId], references: [id])
   tags        ArticleTag[]
 
   @@index([createdAt])
   @@index([searchVector], type: Gin)
   @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([companyId])
+}
+
+model Company {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  domain    String   @unique
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  articles Article[]
 }
 
 model Tag {

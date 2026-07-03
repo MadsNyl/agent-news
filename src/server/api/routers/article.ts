@@ -11,6 +11,7 @@ import {
   listArticles,
   searchArticles,
   getArticleById,
+  getRelatedArticles,
   listTags,
 } from "~/server/services/article";
 
@@ -99,6 +100,25 @@ export const articleRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       return getArticleById(ctx.db, input.id);
+    }),
+
+  getRelated: publicProcedure
+    .input(
+      z.object({
+        articleId: z.string().uuid(),
+        tagIds: z.array(z.string().uuid()),
+        excludeIds: z.array(z.string().uuid()).optional(),
+        limit: z.number().min(1).max(10).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return getRelatedArticles(
+        ctx.db,
+        input.articleId,
+        input.tagIds,
+        input.excludeIds ?? [],
+        input.limit ?? 3,
+      );
     }),
 
   listTags: publicProcedure.query(async ({ ctx }) => {

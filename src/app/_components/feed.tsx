@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { ArticleEntry } from "~/app/_components/article-entry";
 import { SearchBar } from "~/app/_components/search-bar";
 
 export function Feed() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const searchQuery = searchParams.get("q") ?? "";
@@ -24,7 +25,7 @@ export function Feed() {
         }
       }
       const qs = params.toString();
-      router.replace(qs ? `?${qs}` : "/", { scroll: false });
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
     [searchParams, router],
   );

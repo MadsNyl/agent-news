@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 import { db } from "~/server/db";
 import { listCompanies } from "~/server/services/article";
 import { CompanyCarousel } from "~/app/_components/company-carousel";

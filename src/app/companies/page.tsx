@@ -2,6 +2,8 @@ import { type Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 import { db } from "~/server/db";
 import { listCompanies } from "~/server/services/article";
 

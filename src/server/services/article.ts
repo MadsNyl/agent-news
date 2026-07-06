@@ -151,6 +151,44 @@ function detectVideoContent(
   };
 }
 
+interface OEmbedData {
+  title: string | null;
+  thumbnailUrl: string | null;
+  authorName: string | null;
+}
+
+const OEMBED_ENDPOINTS: Record<string, string> = {
+  "youtube.com": "https://www.youtube.com/oembed",
+  "youtu.be": "https://www.youtube.com/oembed",
+  "vimeo.com": "https://vimeo.com/api/oembed.json",
+  "dailymotion.com": "https://www.dailymotion.com/services/oembed",
+};
+
+async function fetchOEmbed(
+  url: string,
+  domain: string,
+): Promise<OEmbedData | null> {
+  const endpoint = OEMBED_ENDPOINTS[domain];
+  if (!endpoint) return null;
+
+  try {
+    const oembedUrl = `${endpoint}?url=${encodeURIComponent(url)}&format=json`;
+    const response = await fetch(oembedUrl, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return {
+      title: data.title ?? null,
+      thumbnailUrl: data.thumbnail_url ?? null,
+      authorName: data.author_name ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function extractMetadata(url: string): Promise<ArticleDraft> {
   const sourceDomain = deriveSourceDomain(url);
   const emptyDraft: ArticleDraft = {
@@ -167,16 +205,22 @@ export async function extractMetadata(url: string): Promise<ArticleDraft> {
   };
 
   try {
+    const oembed = await fetchOEmbed(url, sourceDomain);
+
     const response = await fetch(url, {
       signal: AbortSignal.timeout(10_000),
-      headers: { "User-Agent": "AgentNewsBot/1.0" },
+      headers: {
+        "User-Agent": "AgentNewsBot/1.0",
+        "Accept-Language": "en-US,en;q=0.9",
+        Cookie: "CONSENT=YES+cb",
+      },
     });
-    if (!response.ok) return emptyDraft;
+    if (!response.ok && !oembed) return emptyDraft;
 
-    const html = await response.text();
+    const html = response.ok ? await response.text() : "";
     const $ = cheerio.load(html);
 
-    const title =
+    const scrapedTitle =
       $('meta[property="og:title"]').attr("content") ??
       $("title").text() ??
       null;
@@ -186,7 +230,8 @@ export async function extractMetadata(url: string): Promise<ArticleDraft> {
       $('meta[name="description"]').attr("content") ??
       null;
 
-    const ogImage = $('meta[property="og:image"]').attr("content") ?? null;
+    const scrapedOgImage =
+      $('meta[property="og:image"]').attr("content") ?? null;
 
     let favicon =
       $('link[rel="icon"]').attr("href") ??
@@ -215,6 +260,9 @@ export async function extractMetadata(url: string): Promise<ArticleDraft> {
       null;
 
     const finalDescription = video.description ?? description;
+
+    const title = oembed?.title ?? scrapedTitle;
+    const ogImage = scrapedOgImage ?? oembed?.thumbnailUrl ?? null;
 
     return {
       url,

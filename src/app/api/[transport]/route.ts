@@ -80,7 +80,7 @@ function initServer(server) {
     {
       title: "Submit Article",
       description:
-        "Submit an external article. Provide the URL and metadata directly. Requires authentication.",
+        "Submit a written article. Provide the URL and metadata directly. For videos, use submit_video instead. Requires authentication.",
       inputSchema: z.object({
         url: z.string().url().describe("Article URL"),
         title: z.string().describe("Article title"),
@@ -99,14 +99,60 @@ function initServer(server) {
           .describe(
             "A short and concise summary to give the reader a brief insight into what the article is about",
           ),
-        contentType: z
-          .nativeEnum(ContentType)
+      }),
+    },
+    async (input, { authInfo }) => {
+      const userId = authInfo?.extra?.userId;
+      if (!userId) {
+        return {
+          content: [{ type: "text", text: "Authentication required. Please connect with OAuth first." }],
+          isError: true,
+        };
+      }
+
+      const article = await createArticle(db, input, userId);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(article, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "submit_video",
+    {
+      title: "Submit Video",
+      description:
+        "Submit a video from YouTube, Vimeo, Dailymotion, Loom, or other video platforms. Provide the URL and metadata directly. For written articles, use submit_article instead. Requires authentication.",
+      inputSchema: z.object({
+        url: z.string().url().describe("Video URL (e.g. https://www.youtube.com/watch?v=...)"),
+        title: z.string().describe("Video title"),
+        description: z
+          .string()
           .optional()
-          .describe("Content type: ARTICLE or VIDEO (auto-detected if omitted)"),
+          .describe("Video description"),
+        ogImage: z
+          .string()
+          .optional()
+          .describe("Thumbnail image URL"),
+        favicon: z.string().optional().describe("Favicon URL"),
+        sourceDomain: z.string().optional().describe("Source domain name"),
+        publishedAt: z.string().optional().describe("ISO date string of when the video was published"),
+        tags: z.array(z.string()).optional().describe("Tags to apply"),
+        summary: z
+          .string()
+          .optional()
+          .describe(
+            "A short and concise summary to give the viewer a brief insight into what the video covers",
+          ),
         videoEmbedUrl: z
           .string()
           .optional()
-          .describe("Embeddable video URL (e.g. YouTube embed URL)"),
+          .describe("Embeddable video URL (e.g. https://www.youtube.com/embed/VIDEO_ID). Auto-derived from URL for YouTube, Vimeo, Dailymotion, and Loom if omitted"),
         videoDuration: z
           .number()
           .int()
@@ -123,7 +169,11 @@ function initServer(server) {
         };
       }
 
-      const article = await createArticle(db, input, userId);
+      const article = await createArticle(
+        db,
+        { ...input, contentType: ContentType.VIDEO },
+        userId,
+      );
       return {
         content: [
           {

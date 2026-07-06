@@ -53,6 +53,12 @@ export function NavBar() {
             Articles
           </Link>
           <Link
+            href="/videos"
+            className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
+          >
+            Videos
+          </Link>
+          <Link
             href="/companies"
             className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
           >
@@ -165,6 +171,13 @@ export function NavBar() {
                 onClick={() => setMenuOpen(false)}
               >
                 Articles
+              </Link>
+              <Link
+                href="/videos"
+                className="font-heading text-4xl font-black text-foreground transition-colors hover:text-muted-foreground"
+                onClick={() => setMenuOpen(false)}
+              >
+                Videos
               </Link>
               <Link
                 href="/companies"

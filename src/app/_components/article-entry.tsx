@@ -10,6 +10,7 @@ interface Article {
   favicon: string | null;
   sourceDomain: string;
   publishedAt: Date | string | null;
+  contentType?: string;
   tags: Array<{ tag: { id: string; name: string; slug: string } }>;
   submittedBy?: { name: string } | null;
 }
@@ -39,13 +40,14 @@ function ArticleCard({ article }: { article: Article }) {
     article.publishedAt instanceof Date
       ? article.publishedAt.toISOString()
       : article.publishedAt;
+  const isVideo = article.contentType === "VIDEO";
 
   return (
     <Link
       href={`/articles/${article.id}`}
       className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-150 ease-out hover:border-muted-foreground/25"
     >
-      <div className="aspect-[16/9] overflow-hidden">
+      <div className="relative aspect-[16/9] overflow-hidden">
         <Image
           src={article.ogImage ?? "/default.png"}
           alt=""
@@ -54,6 +56,15 @@ function ArticleCard({ article }: { article: Article }) {
           className="h-full w-full object-cover transition-opacity duration-150 group-hover:opacity-80"
           unoptimized={!!article.ogImage}
         />
+        {isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-5 w-5">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
@@ -114,6 +125,7 @@ function ArticleRow({ article }: { article: Article }) {
     article.publishedAt instanceof Date
       ? article.publishedAt.toISOString()
       : article.publishedAt;
+  const isVideo = article.contentType === "VIDEO";
 
   return (
     <Link
@@ -186,7 +198,7 @@ function ArticleRow({ article }: { article: Article }) {
         </div>
       </div>
 
-      <div className="shrink-0 overflow-hidden rounded-md">
+      <div className="relative shrink-0 overflow-hidden rounded-md">
         <Image
           src={article.ogImage ?? "/default.png"}
           alt=""
@@ -195,6 +207,15 @@ function ArticleRow({ article }: { article: Article }) {
           className="h-20 w-20 rounded-md object-cover"
           unoptimized={!!article.ogImage}
         />
+        {isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-3.5 w-3.5">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        )}
       </div>
     </Link>
   );

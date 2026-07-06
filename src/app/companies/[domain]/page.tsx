@@ -1,10 +1,11 @@
 import { type Metadata } from "next";
 import Image from "next/image";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { db } from "~/server/db";
 import { getCompanyByDomain } from "~/server/services/article";
-import { ArticleEntry } from "~/app/_components/article-entry";
+import { CompanyContentTabs } from "~/app/_components/company-content-tabs";
 
 type Props = { params: Promise<{ domain: string }> };
 
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${company.name} — Agent News`,
-    description: `Articles from ${company.name} about AI agent implementations in enterprise.`,
+    description: `Content from ${company.name} about AI agent implementations in enterprise.`,
   };
 }
 
@@ -23,6 +24,9 @@ export default async function CompanyDetailPage({ params }: Props) {
   const { domain } = await params;
   const company = await getCompanyByDomain(db, domain);
   if (!company) notFound();
+
+  const articleCount = company.articles.filter((a) => a.contentType === "ARTICLE").length;
+  const videoCount = company.articles.filter((a) => a.contentType === "VIDEO").length;
 
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -43,23 +47,21 @@ export default async function CompanyDetailPage({ params }: Props) {
             {company.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {company.articles.length}{" "}
-            {company.articles.length === 1 ? "article" : "articles"}
+            {articleCount > 0 && (
+              <>{articleCount} {articleCount === 1 ? "article" : "articles"}</>
+            )}
+            {articleCount > 0 && videoCount > 0 && <> &middot; </>}
+            {videoCount > 0 && (
+              <>{videoCount} {videoCount === 1 ? "video" : "videos"}</>
+            )}
           </p>
         </div>
       </header>
 
       <main className="pb-12">
-        <div className="divide-y divide-border md:hidden">
-          {company.articles.map((article) => (
-            <ArticleEntry key={article.id} article={article} />
-          ))}
-        </div>
-        <div className="hidden md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-5">
-          {company.articles.map((article) => (
-            <ArticleEntry key={article.id} article={article} variant="card" />
-          ))}
-        </div>
+        <Suspense>
+          <CompanyContentTabs articles={company.articles} />
+        </Suspense>
       </main>
     </div>
   );

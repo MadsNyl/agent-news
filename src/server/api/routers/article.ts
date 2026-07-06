@@ -5,6 +5,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { ContentType } from "../../../../generated/prisma";
 import {
   extractMetadata,
   createArticle,
@@ -49,6 +50,9 @@ export const articleRouter = createTRPCRouter({
         sourceDomain: z.string().optional(),
         publishedAt: z.string().nullish(),
         tags: z.array(z.string()).optional(),
+        contentType: z.nativeEnum(ContentType).optional(),
+        videoEmbedUrl: z.string().nullish(),
+        videoDuration: z.number().int().nullish(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -77,6 +81,7 @@ export const articleRouter = createTRPCRouter({
             .optional(),
           limit: z.number().min(1).max(50).optional(),
           tagSlug: z.string().optional(),
+          contentType: z.nativeEnum(ContentType).optional(),
         })
         .optional(),
     )
@@ -121,9 +126,17 @@ export const articleRouter = createTRPCRouter({
       );
     }),
 
-  listTags: publicProcedure.query(async ({ ctx }) => {
-    return listTags(ctx.db);
-  }),
+  listTags: publicProcedure
+    .input(
+      z
+        .object({
+          contentType: z.nativeEnum(ContentType).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      return listTags(ctx.db, input?.contentType);
+    }),
 
   trackRead: publicProcedure
     .input(z.object({ id: z.string().uuid() }))

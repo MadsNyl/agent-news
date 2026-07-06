@@ -3,15 +3,15 @@ import { Suspense } from "react";
 import { Feed } from "~/app/_components/feed";
 
 export const metadata: Metadata = {
-  title: "Articles — Agent News",
+  title: "Videos — Agent News",
   description:
-    "Browse curated articles about real-world AI agent implementations in enterprise and business.",
+    "Watch curated videos about real-world AI agent implementations in enterprise and business.",
 };
 
-export default function ArticlesPage() {
+export default function VideosPage() {
   return (
     <Suspense>
-      <Feed contentType="ARTICLE" />
+      <Feed contentType="VIDEO" />
     </Suspense>
   );
 }

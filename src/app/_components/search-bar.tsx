@@ -15,12 +15,14 @@ export function SearchBar({
   onTagSelect,
   activeTag,
   initialQuery,
+  placeholder = "Search articles...",
 }: {
   tags: TagOption[];
   onSearch: (query: string) => void;
   onTagSelect: (slug: string | null) => void;
   activeTag: string | null;
   initialQuery?: string;
+  placeholder?: string;
 }) {
   const [query, setQuery] = useState(initialQuery ?? "");
 
@@ -35,7 +37,7 @@ export function SearchBar({
     <div className="flex flex-col gap-3">
       <input
         type="text"
-        placeholder="Search articles..."
+        placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"

@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: article.title,
       description,
       images: article.ogImage ? [article.ogImage] : [],
-      type: "article",
+      type: article.contentType === "VIDEO" ? "video.other" : "article",
       publishedTime: article.publishedAt?.toISOString(),
     },
     twitter: {
@@ -81,7 +81,17 @@ export default async function ArticleDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-[700px] px-4 py-8 sm:py-12">
-      {article.ogImage && (
+      {article.contentType === "VIDEO" && article.videoEmbedUrl ? (
+        <div className="mb-8 overflow-hidden rounded-lg">
+          <iframe
+            src={article.videoEmbedUrl}
+            title={article.title}
+            className="aspect-video w-full rounded-lg"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : article.ogImage ? (
         <div className="mb-8 overflow-hidden rounded-lg">
           <Image
             src={article.ogImage}
@@ -93,7 +103,7 @@ export default async function ArticleDetailPage({ params }: Props) {
             priority
           />
         </div>
-      )}
+      ) : null}
 
       <h1
         className="font-heading text-2xl font-black leading-tight text-foreground sm:text-3xl"
@@ -187,13 +197,13 @@ export default async function ArticleDetailPage({ params }: Props) {
 
       <div className="mt-8 flex gap-3">
         <ShareButton title={article.title} articleId={article.id} />
-        <ReadArticleButton url={article.url} articleId={article.id} />
+        <ReadArticleButton url={article.url} articleId={article.id} contentType={article.contentType} />
       </div>
 
       {companyArticles.length > 0 && (
         <section className="mt-12 border-t border-border pt-8">
           <h2 className="font-heading text-lg font-bold text-foreground">
-            More from{" "}
+            {article.contentType === "VIDEO" ? "More videos from" : "More from"}{" "}
             <Link
               href={`/companies/${article.company!.domain}`}
               className="hover:text-accent-foreground transition-colors"
@@ -212,7 +222,7 @@ export default async function ArticleDetailPage({ params }: Props) {
       {relatedArticles.length > 0 && (
         <section className="mt-12 border-t border-border pt-8">
           <h2 className="font-heading text-lg font-bold text-foreground">
-            Related Articles
+            {article.contentType === "VIDEO" ? "Related Videos" : "Related Articles"}
           </h2>
           <div className="mt-4 space-y-4">
             {relatedArticles.map((a) => (

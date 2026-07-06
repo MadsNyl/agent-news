@@ -1,5 +1,11 @@
-import { type PrismaClient, Prisma } from "../../../generated/prisma";
+import {
+  type PrismaClient,
+  Prisma,
+  ContentType,
+} from "../../../generated/prisma";
 import * as cheerio from "cheerio";
+
+export { ContentType };
 
 export type ArticleDraft = {
   url: string;
@@ -9,6 +15,9 @@ export type ArticleDraft = {
   favicon: string | null;
   sourceDomain: string;
   publishedAt: string | null;
+  contentType: ContentType;
+  videoEmbedUrl: string | null;
+  videoDuration: number | null;
 };
 
 function deriveSourceDomain(url: string): string {
@@ -29,6 +38,119 @@ function domainToName(domain: string): string {
     .join(" ");
 }
 
+const VIDEO_DOMAINS = new Set([
+  "youtube.com",
+  "youtu.be",
+  "vimeo.com",
+  "dailymotion.com",
+  "twitch.tv",
+  "loom.com",
+]);
+
+function extractVideoEmbedUrl(url: string, domain: string): string | null {
+  try {
+    const u = new URL(url);
+
+    if (domain === "youtube.com" || domain === "youtu.be") {
+      let videoId: string | null = null;
+      if (domain === "youtu.be") {
+        videoId = u.pathname.slice(1);
+      } else if (u.pathname.startsWith("/watch")) {
+        videoId = u.searchParams.get("v");
+      } else if (u.pathname.startsWith("/embed/")) {
+        videoId = u.pathname.split("/embed/")[1]?.split(/[?/]/)[0] ?? null;
+      } else if (u.pathname.startsWith("/shorts/")) {
+        videoId = u.pathname.split("/shorts/")[1]?.split(/[?/]/)[0] ?? null;
+      }
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (domain === "vimeo.com") {
+      const match = u.pathname.match(/\/(\d+)/);
+      if (match?.[1]) return `https://player.vimeo.com/video/${match[1]}`;
+    }
+
+    if (domain === "dailymotion.com") {
+      const match = u.pathname.match(/\/video\/([a-zA-Z0-9]+)/);
+      if (match?.[1])
+        return `https://www.dailymotion.com/embed/video/${match[1]}`;
+    }
+
+    if (domain === "loom.com") {
+      const match = u.pathname.match(/\/share\/([a-f0-9]+)/);
+      if (match?.[1]) return `https://www.loom.com/embed/${match[1]}`;
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
+interface VideoDetection {
+  isVideo: boolean;
+  embedUrl: string | null;
+  duration: number | null;
+  description: string | null;
+  publishedAt: string | null;
+}
+
+function detectVideoContent(
+  $: cheerio.CheerioAPI,
+  domain: string,
+): VideoDetection {
+  const ogType = $('meta[property="og:type"]').attr("content") ?? "";
+  const hasOgVideo = !!$('meta[property="og:video"]').attr("content") ||
+    !!$('meta[property="og:video:url"]').attr("content");
+  const isOgVideo = ogType.startsWith("video");
+
+  let duration: number | null = null;
+  let embedFromMeta: string | null = null;
+  let ldDescription: string | null = null;
+  let ldPublishedAt: string | null = null;
+
+  const ldJsonScripts = $('script[type="application/ld+json"]');
+  let hasVideoObject = false;
+  ldJsonScripts.each((_, el) => {
+    try {
+      const data = JSON.parse($(el).text());
+      const items = Array.isArray(data) ? data : [data];
+      for (const item of items) {
+        if (item["@type"] === "VideoObject") {
+          hasVideoObject = true;
+          if (item.embedUrl) embedFromMeta = item.embedUrl;
+          if (item.description) ldDescription = item.description;
+          if (item.uploadDate) ldPublishedAt = item.uploadDate;
+          else if (item.datePublished) ldPublishedAt = item.datePublished;
+          if (item.duration) {
+            const match = String(item.duration).match(
+              /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/,
+            );
+            if (match) {
+              duration =
+                (parseInt(match[1] ?? "0") * 3600) +
+                (parseInt(match[2] ?? "0") * 60) +
+                parseInt(match[3] ?? "0");
+            }
+          }
+        }
+      }
+    } catch {
+      // invalid JSON-LD
+    }
+  });
+
+  const isVideoDomain = VIDEO_DOMAINS.has(domain);
+  const isVideo = isVideoDomain || isOgVideo || hasOgVideo || hasVideoObject;
+
+  return {
+    isVideo,
+    embedUrl: embedFromMeta,
+    duration,
+    description: ldDescription,
+    publishedAt: ldPublishedAt,
+  };
+}
+
 export async function extractMetadata(url: string): Promise<ArticleDraft> {
   const sourceDomain = deriveSourceDomain(url);
   const emptyDraft: ArticleDraft = {
@@ -39,6 +161,9 @@ export async function extractMetadata(url: string): Promise<ArticleDraft> {
     favicon: null,
     sourceDomain,
     publishedAt: null,
+    contentType: ContentType.ARTICLE,
+    videoEmbedUrl: null,
+    videoDuration: null,
   };
 
   try {
@@ -77,20 +202,31 @@ export async function extractMetadata(url: string): Promise<ArticleDraft> {
     }
     favicon ??= `https://www.google.com/s2/favicons?domain=${sourceDomain}&sz=32`;
 
+    const video = detectVideoContent($, sourceDomain);
+    const contentType = video.isVideo ? ContentType.VIDEO : ContentType.ARTICLE;
+    const videoEmbedUrl =
+      video.embedUrl ?? extractVideoEmbedUrl(url, sourceDomain);
+
     const publishedAt =
+      video.publishedAt ??
       $('meta[property="article:published_time"]').attr("content") ??
       $('meta[name="date"]').attr("content") ??
       $('meta[property="og:article:published_time"]').attr("content") ??
       null;
 
+    const finalDescription = video.description ?? description;
+
     return {
       url,
       title: title ?? null,
-      description: description ?? null,
+      description: finalDescription ?? null,
       ogImage,
       favicon,
       sourceDomain,
       publishedAt,
+      contentType,
+      videoEmbedUrl: contentType === ContentType.VIDEO ? videoEmbedUrl : null,
+      videoDuration: contentType === ContentType.VIDEO ? video.duration : null,
     };
   } catch {
     return emptyDraft;
@@ -116,6 +252,9 @@ export async function createArticle(
     publishedAt?: string | null;
     tags?: string[];
     summary?: string | null;
+    contentType?: ContentType;
+    videoEmbedUrl?: string | null;
+    videoDuration?: number | null;
   },
   userId: string,
 ) {
@@ -146,6 +285,9 @@ export async function createArticle(
       publishedAt: input.publishedAt ? new Date(input.publishedAt) : null,
       submittedById: userId,
       companyId: company.id,
+      contentType: input.contentType ?? ContentType.ARTICLE,
+      videoEmbedUrl: input.videoEmbedUrl ?? null,
+      videoDuration: input.videoDuration ?? null,
     },
   });
 
@@ -179,11 +321,16 @@ export async function listArticles(
     cursor?: { publishedAt: Date; id: string };
     limit?: number;
     tagSlug?: string;
+    contentType?: ContentType;
   },
 ) {
   const limit = input.limit ?? 20;
 
   const where: Prisma.ArticleWhereInput = {};
+
+  if (input.contentType) {
+    where.contentType = input.contentType;
+  }
 
   if (input.tagSlug) {
     where.tags = { some: { tag: { slug: input.tagSlug } } };
@@ -360,7 +507,31 @@ export async function getArticleByUrl(db: PrismaClient, url: string) {
   });
 }
 
-export async function listTags(db: PrismaClient) {
+export async function listTags(
+  db: PrismaClient,
+  contentType?: ContentType,
+) {
+  if (contentType) {
+    const tags = await db.tag.findMany({
+      where: {
+        articles: { some: { article: { contentType } } },
+      },
+      include: {
+        articles: {
+          where: { article: { contentType } },
+          select: { articleId: true },
+        },
+      },
+      orderBy: { articles: { _count: "desc" } },
+    });
+    return tags.map((t) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      count: t.articles.length,
+    }));
+  }
+
   const tags = await db.tag.findMany({
     include: { _count: { select: { articles: true } } },
     orderBy: { articles: { _count: "desc" } },

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import { db } from "~/server/db";
+import { ContentType } from "../../../../generated/prisma";
 import {
   searchArticles,
   createArticle,
@@ -98,6 +99,19 @@ function initServer(server) {
           .describe(
             "A short and concise summary to give the reader a brief insight into what the article is about",
           ),
+        contentType: z
+          .nativeEnum(ContentType)
+          .optional()
+          .describe("Content type: ARTICLE or VIDEO (auto-detected if omitted)"),
+        videoEmbedUrl: z
+          .string()
+          .optional()
+          .describe("Embeddable video URL (e.g. YouTube embed URL)"),
+        videoDuration: z
+          .number()
+          .int()
+          .optional()
+          .describe("Video duration in seconds"),
       }),
     },
     async (input, { authInfo }) => {

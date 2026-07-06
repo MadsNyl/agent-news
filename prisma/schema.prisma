@@ -17,6 +17,11 @@ datasource db {
   extensions = [pg_trgm]
 }
 
+enum ContentType {
+  ARTICLE
+  VIDEO
+}
+
 model Article {
   id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   url           String                   @unique
@@ -35,6 +40,9 @@ model Article {
   readCount       Int                      @default(0)
   shareCount      Int                      @default(0)
   shareClickCount Int                      @default(0)
+  contentType     ContentType              @default(ARTICLE)
+  videoEmbedUrl   String?
+  videoDuration   Int?
 
   submittedBy User         @relation(fields: [submittedById], references: [id])
   company     Company?     @relation(fields: [companyId], references: [id])

@@ -19,6 +19,9 @@ export default function SubmitPage() {
   const [favicon, setFavicon] = useState("");
   const [sourceDomain, setSourceDomain] = useState("");
   const [publishedAt, setPublishedAt] = useState("");
+  const [contentType, setContentType] = useState<"ARTICLE" | "VIDEO">("ARTICLE");
+  const [videoEmbedUrl, setVideoEmbedUrl] = useState("");
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +36,9 @@ export default function SubmitPage() {
       setFavicon(data.favicon ?? "");
       setSourceDomain(data.sourceDomain);
       setPublishedAt(data.publishedAt ?? "");
+      setContentType(data.contentType === "VIDEO" ? "VIDEO" : "ARTICLE");
+      setVideoEmbedUrl(data.videoEmbedUrl ?? "");
+      setVideoDuration(data.videoDuration ?? null);
       setFetched(true);
       setError(null);
     },
@@ -82,13 +88,16 @@ export default function SubmitPage() {
       sourceDomain,
       publishedAt: publishedAt || undefined,
       tags: selectedTags,
+      contentType,
+      videoEmbedUrl: videoEmbedUrl.trim() || undefined,
+      videoDuration: videoDuration ?? undefined,
     });
   }
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl px-4 py-8 sm:px-0">
       <h1 className="font-heading text-2xl font-black text-foreground">
-        Submit article
+        Submit {contentType === "VIDEO" && fetched ? "video" : "article"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Enter a URL to auto-extract metadata, then review and submit.
@@ -118,7 +127,17 @@ export default function SubmitPage() {
 
       {fetched && (
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-          {ogImage && (
+          {contentType === "VIDEO" && videoEmbedUrl ? (
+            <div className="overflow-hidden rounded-lg">
+              <iframe
+                src={videoEmbedUrl}
+                title="Video preview"
+                className="aspect-video w-full rounded-lg"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : ogImage ? (
             <div className="overflow-hidden rounded-md">
               <Image
                 src={ogImage}
@@ -129,7 +148,24 @@ export default function SubmitPage() {
                 unoptimized
               />
             </div>
-          )}
+          ) : null}
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                contentType === "VIDEO"
+                  ? "bg-red-500/10 text-red-500"
+                  : "bg-blue-500/10 text-blue-500"
+              }`}
+            >
+              {contentType === "VIDEO" ? "Video" : "Article"}
+            </span>
+            {contentType === "VIDEO" && videoDuration != null && (
+              <span className="text-xs text-muted-foreground">
+                {Math.floor(videoDuration / 60)}:{String(videoDuration % 60).padStart(2, "0")}
+              </span>
+            )}
+          </div>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-foreground">
@@ -223,7 +259,9 @@ export default function SubmitPage() {
             disabled={!title.trim() || createMutation.isPending}
             className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {createMutation.isPending ? "Submitting..." : "Submit article"}
+            {createMutation.isPending
+              ? "Submitting..."
+              : `Submit ${contentType === "VIDEO" ? "video" : "article"}`}
           </button>
         </form>
       )}

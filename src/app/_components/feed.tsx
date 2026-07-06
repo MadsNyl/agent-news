@@ -6,7 +6,7 @@ import { api } from "~/trpc/react";
 import { ArticleEntry } from "~/app/_components/article-entry";
 import { SearchBar } from "~/app/_components/search-bar";
 
-export function Feed() {
+export function Feed({ contentType }: { contentType?: "ARTICLE" | "VIDEO" } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -44,12 +44,14 @@ export function Feed() {
     [updateParams],
   );
 
-  const tagsQuery = api.article.listTags.useQuery();
+  const tagsQuery = api.article.listTags.useQuery(
+    contentType ? { contentType } : undefined,
+  );
 
   const isSearching = searchQuery.length > 0;
 
   const listQuery = api.article.list.useInfiniteQuery(
-    { limit: 20, tagSlug: activeTag ?? undefined },
+    { limit: 20, tagSlug: activeTag ?? undefined, contentType },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
       enabled: !isSearching,
@@ -71,8 +73,9 @@ export function Feed() {
     <div className="mx-auto min-h-screen max-w-6xl px-4 sm:px-6 lg:px-8">
       <header className="pb-6 pt-6 sm:pt-8">
         <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">
-          Curated articles about real-world AI agent implementations in
-          enterprise and business.
+          {contentType === "VIDEO"
+            ? "Curated videos about real-world AI agent implementations in enterprise and business."
+            : "Curated articles about real-world AI agent implementations in enterprise and business."}
         </p>
       </header>
 
@@ -82,6 +85,7 @@ export function Feed() {
         onTagSelect={handleTagSelect}
         activeTag={activeTag}
         initialQuery={searchQuery}
+        placeholder={contentType === "VIDEO" ? "Search videos..." : "Search articles..."}
       />
 
       <main className="py-6 sm:py-8">
@@ -91,7 +95,7 @@ export function Feed() {
           </div>
         ) : articles.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
-            No articles found.
+            {contentType === "VIDEO" ? "No videos found." : "No articles found."}
           </div>
         ) : (
           <>
@@ -127,7 +131,9 @@ export function Feed() {
 
       <footer className="border-t border-border py-8">
         <p className="text-xs text-muted-foreground">
-          All articles link to their original source.
+          {contentType === "VIDEO"
+            ? "All videos link to their original source."
+            : "All articles link to their original source."}
         </p>
       </footer>
     </div>

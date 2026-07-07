@@ -45,6 +45,7 @@ export const articleRouter = createTRPCRouter({
         url: z.string().url(),
         title: z.string().min(1),
         description: z.string().nullish(),
+        summary: z.string().nullish(),
         ogImage: z.string().nullish(),
         favicon: z.string().nullish(),
         sourceDomain: z.string().optional(),
@@ -123,6 +124,20 @@ export const articleRouter = createTRPCRouter({
         input.tagIds,
         input.excludeIds ?? [],
         input.limit ?? 3,
+      );
+    }),
+
+  checkUrls: protectedProcedure
+    .input(z.object({ urls: z.array(z.string().url()).max(500) }))
+    .query(async ({ ctx, input }) => {
+      const allVariants = input.urls.flatMap(urlVariants);
+      const existing = await ctx.db.article.findMany({
+        where: { url: { in: allVariants } },
+        select: { url: true },
+      });
+      const existingSet = new Set(existing.map((a) => a.url));
+      return input.urls.filter((url) =>
+        urlVariants(url).some((v) => existingSet.has(v)),
       );
     }),
 

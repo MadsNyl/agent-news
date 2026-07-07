@@ -121,14 +121,43 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
-  .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
+  .use(async ({ ctx, next }) => {
+    if (ctx.session?.user) {
+      return next({
+        ctx: { session: { ...ctx.session, user: ctx.session.user } },
+      });
     }
-    return next({
-      ctx: {
-        // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
-      },
-    });
+
+    const apiKey = ctx.headers.get("x-api-key");
+    if (apiKey) {
+      const hash = await crypto.subtle
+        .digest("SHA-256", new TextEncoder().encode(apiKey))
+        .then((buf) =>
+          Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""),
+        );
+      const record = await ctx.db.apiKey.findUnique({
+        where: { hashedKey: hash },
+        include: { user: true },
+      });
+      if (record) {
+        ctx.db.apiKey
+          .update({
+            where: { id: record.id },
+            data: { lastUsedAt: new Date() },
+          })
+          .catch(() => {});
+        return next({
+          ctx: {
+            session: {
+              user: record.user,
+              session: {} as any,
+            },
+          },
+        });
+      }
+    }
+
+    throw new TRPCError({ code: "UNAUTHORIZED" });
   });

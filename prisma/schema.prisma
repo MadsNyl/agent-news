@@ -83,6 +83,19 @@ model ArticleTag {
   @@id([articleId, tagId])
 }
 
+model ApiKey {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  hashedKey String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@map("api_key")
+}
+
 model User {
   id            String    @id
   name          String //@db.Text
@@ -99,6 +112,7 @@ model User {
   oauthrefreshtokens OauthRefreshToken[]
   oauthaccesstokens  OauthAccessToken[]
   oauthconsents      OauthConsent[]
+  apiKeys            ApiKey[]
 
   @@unique([email])
   @@map("user")

@@ -115,7 +115,7 @@ export async function extractPageData(
       for (const pattern of videoPatterns) {
         const match = src.match(pattern);
         if (match) {
-          const videoId = match[1];
+          const videoId = match[1]!;
           const isVimeo = pattern.source.includes("vimeo");
           video = {
             embedUrl: isVimeo
@@ -133,7 +133,7 @@ export async function extractPageData(
       for (const pattern of videoPatterns) {
         const match = playerUrl.match(pattern);
         if (match) {
-          const videoId = match[1];
+          const videoId = match[1]!;
           const isVimeo = pattern.source.includes("vimeo");
           video = {
             embedUrl: isVimeo

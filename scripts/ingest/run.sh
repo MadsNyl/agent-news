@@ -12,5 +12,5 @@ else
   echo "[$(date)] Ollama started" >> "$LOG"
 fi
 
-export PATH="$HOME/.bun/bin:$PATH"
+export PATH="/opt/homebrew/bin:$HOME/.bun/bin:$PATH"
 bun run scripts/ingest/main.ts >> "$LOG" 2>&1

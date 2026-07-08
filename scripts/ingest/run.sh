@@ -12,4 +12,5 @@ else
   echo "[$(date)] Ollama started" >> "$LOG"
 fi
 
-/Users/madsnylund/.bun/bin/bun run scripts/ingest/main.ts >> "$LOG" 2>&1
+export PATH="$HOME/.bun/bin:$PATH"
+bun run scripts/ingest/main.ts >> "$LOG" 2>&1

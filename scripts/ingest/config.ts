@@ -17,9 +17,9 @@ function parseFlagValue(flag: string): string | undefined {
 }
 
 export const DRY_RUN = parseFlag("--dry-run");
-const limitStr = parseFlagValue("--limit");
+const limitStr = parseFlagValue("--limit") ?? process.env.INGEST_LIMIT;
 export const LIMIT = limitStr ? parseInt(limitStr, 10) : undefined;
-const feedsStr = parseFlagValue("--feeds");
+const feedsStr = parseFlagValue("--feeds") ?? process.env.INGEST_FEEDS;
 export const FEEDS_LIMIT = feedsStr ? parseInt(feedsStr, 10) : undefined;
 
 export const OLLAMA_URL =

@@ -8,6 +8,7 @@ import { useRouter, usePathname } from "next/navigation";
 
 export function NavBar() {
   const { data: session, isPending } = authClient.useSession();
+  const isSuperAdmin = session?.user.isSuperAdmin === true;
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -64,6 +65,14 @@ export function NavBar() {
           >
             Companies
           </Link>
+          {isSuperAdmin && (
+            <Link
+              href="/admin"
+              className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
+            >
+              Admin
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -186,6 +195,15 @@ export function NavBar() {
               >
                 Companies
               </Link>
+              {isSuperAdmin && (
+                <Link
+                  href="/admin"
+                  className="font-heading text-4xl font-black text-foreground transition-colors hover:text-muted-foreground"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
               {!isPending && session && (
                 <Link
                   href="/submit"

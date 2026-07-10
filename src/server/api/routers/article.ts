@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   createTRPCRouter,
+  adminProcedure,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
@@ -14,6 +15,8 @@ import {
   getArticleById,
   getRelatedArticles,
   listTags,
+  adminListContent,
+  deleteArticle,
 } from "~/server/services/article";
 
 function urlVariants(url: string): string[] {
@@ -169,5 +172,24 @@ export const articleRouter = createTRPCRouter({
         where: { id: input.id },
         data: { shareCount: { increment: 1 } },
       });
+    }),
+
+  adminList: adminProcedure
+    .input(
+      z
+        .object({
+          page: z.number().int().min(1).optional(),
+          limit: z.number().min(1).max(100).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      return adminListContent(ctx.db, input ?? {});
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return deleteArticle(ctx.db, input.id);
     }),
 });

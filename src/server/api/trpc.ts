@@ -161,3 +161,16 @@ export const protectedProcedure = t.procedure
 
     throw new TRPCError({ code: "UNAUTHORIZED" });
   });
+
+/**
+ * Super-admin procedure
+ *
+ * Builds on `protectedProcedure` and additionally requires the authenticated user to have
+ * `isSuperAdmin` set. Throws `FORBIDDEN` for any authenticated-but-not-superadmin user.
+ */
+export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (!ctx.session.user.isSuperAdmin) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  return next({ ctx });
+});

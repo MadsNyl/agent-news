@@ -102,6 +102,7 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String? //@db.Text
+  isSuperAdmin  Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]

@@ -7,6 +7,7 @@ import { Geist, Merriweather } from "next/font/google";
 import { cn } from "~/lib/utils";
 import { TRPCReactProvider } from "~/trpc/react";
 import { NavBar } from "~/app/_components/nav-bar";
+import { Toaster } from "~/components/ui/sonner";
 
 const merriweather = Merriweather({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
             <NavBar />
           </div>
           {children}
+          <Toaster theme="dark" richColors />
         </TRPCReactProvider>
         <Script
           defer

@@ -288,6 +288,44 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+export async function adminListContent(
+  db: PrismaClient,
+  input: {
+    page?: number;
+    limit?: number;
+  },
+) {
+  const limit = input.limit ?? 50;
+  const page = Math.max(1, input.page ?? 1);
+
+  const [totalCount, items] = await Promise.all([
+    db.article.count(),
+    db.article.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        sourceDomain: true,
+        contentType: true,
+        createdAt: true,
+        submittedBy: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+
+  return { items, totalCount, totalPages, page, limit };
+}
+
+export async function deleteArticle(db: PrismaClient, id: string) {
+  await db.article.delete({ where: { id } });
+  return { id };
+}
+
 export async function createArticle(
   db: PrismaClient,
   input: {

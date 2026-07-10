@@ -14,6 +14,17 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  user: {
+    additionalFields: {
+      isSuperAdmin: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        // Prevent clients from setting this during sign-up / profile update.
+        input: false,
+      },
+    },
+  },
   socialProviders:
     env.BETTER_AUTH_GOOGLE_CLIENT_ID && env.BETTER_AUTH_GOOGLE_CLIENT_SECRET
       ? {

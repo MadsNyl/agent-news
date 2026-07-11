@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "~/trpc/react";
+import { ArrowRight } from "~/components/icons";
 
 export function ReadArticleButton({
   url,
@@ -20,9 +21,10 @@ export function ReadArticleButton({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => trackRead.mutate({ id: articleId })}
-      className="flex-1 rounded-md bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+      className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
     >
-      {isVideo ? "Watch on source" : "Read Article"} &rarr;
+      {isVideo ? "Watch on source" : "Read Article"}
+      <ArrowRight size={16} />
     </a>
   );
 }

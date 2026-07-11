@@ -3,6 +3,7 @@
 import { authClient } from "~/server/better-auth/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Login, Plus } from "~/components/icons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -91,8 +92,9 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
+          {!loading && (isSignUp ? <Plus size={16} /> : <Login size={16} />)}
           {loading ? "Loading..." : isSignUp ? "Create account" : "Sign in"}
         </button>
       </form>

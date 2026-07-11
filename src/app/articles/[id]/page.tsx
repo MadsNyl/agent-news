@@ -8,9 +8,7 @@ import { getArticleById, getRelatedArticles } from "~/server/services/article";
 import { ArticleEntry } from "~/app/_components/article-entry";
 import { ReadArticleButton } from "~/app/_components/read-article-button";
 import { ShareButton } from "~/app/_components/share-button";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { EyeIcon } from "@hugeicons/core-free-icons";
-import { Share01Icon } from "@hugeicons/core-free-icons";
+import { Eye, Share } from "~/components/icons";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -161,13 +159,13 @@ export default async function ArticleDetailPage({ params }: Props) {
             <span className="text-border">&middot;</span>
             {article.readCount > 0 && (
               <span className="flex items-center gap-1">
-                <HugeiconsIcon icon={EyeIcon} size={14} />
+                <Eye size={14} />
                 {article.readCount}
               </span>
             )}
             {article.shareCount > 0 && (
               <span className="flex items-center gap-1">
-                <HugeiconsIcon icon={Share01Icon} size={14} />
+                <Share size={14} />
                 {article.shareCount}
               </span>
             )}

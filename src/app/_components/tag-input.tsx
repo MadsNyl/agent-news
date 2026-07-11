@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { X } from "~/components/icons";
 
 interface TagOption {
   id: string;
@@ -51,9 +52,10 @@ export function TagInput({
             <button
               type="button"
               onClick={() => onRemove(tag)}
-              className="text-muted-foreground hover:text-foreground"
+              className="flex items-center text-muted-foreground hover:text-foreground"
+              aria-label={`Remove ${tag}`}
             >
-              &times;
+              <X size={12} />
             </button>
           </span>
         ))}

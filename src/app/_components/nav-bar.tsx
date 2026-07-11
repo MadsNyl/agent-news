@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { authClient } from "~/server/better-auth/client";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { Plus, Login, Logout } from "~/components/icons";
 
 export function NavBar() {
   const { data: session, isPending } = authClient.useSession();
@@ -84,8 +85,9 @@ export function NavBar() {
               <>
                 <Link
                   href="/submit"
-                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
+                  <Plus size={16} />
                   Submit
                 </Link>
                 <button
@@ -93,16 +95,18 @@ export function NavBar() {
                     await authClient.signOut();
                     router.refresh();
                   }}
-                  className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
+                  <Logout size={16} />
                   Sign out
                 </button>
               </>
             ) : (
               <Link
                 href="/login"
-                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
+                <Login size={16} />
                 Sign in
               </Link>
             )}

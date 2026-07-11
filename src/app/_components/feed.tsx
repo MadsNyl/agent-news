@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { ArticleEntry } from "~/app/_components/article-entry";
 import { SearchBar } from "~/app/_components/search-bar";
+import { Loader, Inbox } from "~/components/icons";
 
 export function Feed({ contentType }: { contentType?: "ARTICLE" | "VIDEO" } = {}) {
   const router = useRouter();
@@ -90,11 +91,13 @@ export function Feed({ contentType }: { contentType?: "ARTICLE" | "VIDEO" } = {}
 
       <main className="py-6 sm:py-8">
         {isLoading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
+          <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
+            <Loader size={20} className="animate-spin" />
             Loading...
           </div>
         ) : articles.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
+          <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
+            <Inbox size={24} className="opacity-60" />
             {contentType === "VIDEO" ? "No videos found." : "No articles found."}
           </div>
         ) : (

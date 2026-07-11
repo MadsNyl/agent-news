@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import { ArticleEntry } from "~/app/_components/article-entry";
+import { Inbox } from "~/components/icons";
 
 interface Article {
   id: string;
@@ -94,7 +95,8 @@ export function CompanyContentTabs({ articles }: { articles: Article[] }) {
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             {filtered.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
+              <div className="flex flex-col items-center gap-3 py-12 text-sm text-muted-foreground">
+                <Inbox size={24} className="opacity-60" />
                 {activeTab === "videos" ? "No videos found." : "No articles found."}
               </div>
             ) : (

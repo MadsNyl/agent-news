@@ -6,6 +6,7 @@ import Image from "next/image";
 import { api } from "~/trpc/react";
 import { TagInput } from "~/app/_components/tag-input";
 import { authClient } from "~/server/better-auth/client";
+import { Search, Plus } from "~/components/icons";
 
 export default function SubmitPage() {
   const router = useRouter();
@@ -115,8 +116,9 @@ export default function SubmitPage() {
         <button
           type="submit"
           disabled={extractMutation.isPending}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
+          {!extractMutation.isPending && <Search size={16} />}
           {extractMutation.isPending ? "Fetching..." : "Fetch"}
         </button>
       </form>
@@ -257,8 +259,9 @@ export default function SubmitPage() {
           <button
             type="submit"
             disabled={!title.trim() || createMutation.isPending}
-            className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="mt-2 flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
+            {!createMutation.isPending && <Plus size={16} />}
             {createMutation.isPending
               ? "Submitting..."
               : `Submit ${contentType === "VIDEO" ? "video" : "article"}`}

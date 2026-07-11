@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { authClient } from "~/server/better-auth/client";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
+import { File, Video, Trash } from "~/components/icons";
 import {
   Dialog,
   DialogContent,
@@ -38,12 +39,13 @@ function TypeBadge({ type }: { type: "ARTICLE" | "VIDEO" }) {
   const isVideo = type === "VIDEO";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide ${
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide ${
         isVideo
           ? "bg-purple-500/15 text-purple-400"
           : "bg-blue-500/15 text-blue-400"
       }`}
     >
+      {isVideo ? <Video size={12} /> : <File size={12} />}
       {isVideo ? "Video" : "Article"}
     </span>
   );
@@ -191,11 +193,12 @@ export function AdminContent() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                        className="gap-1.5 text-red-400 hover:bg-red-500/10 hover:text-red-400"
                         onClick={() =>
                           setPendingDelete({ id: item.id, title: item.title })
                         }
                       >
+                        <Trash size={14} />
                         Delete
                       </Button>
                     </td>
@@ -231,11 +234,12 @@ export function AdminContent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="shrink-0 text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                    className="shrink-0 gap-1.5 text-red-400 hover:bg-red-500/10 hover:text-red-400"
                     onClick={() =>
                       setPendingDelete({ id: item.id, title: item.title })
                     }
                   >
+                    <Trash size={14} />
                     Delete
                   </Button>
                 </div>

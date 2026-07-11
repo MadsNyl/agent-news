@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { api } from "~/trpc/react";
+import { Share, Check } from "~/components/icons";
 
 export function ShareButton({ title, articleId }: { title: string; articleId: string }) {
   const [copied, setCopied] = useState(false);
@@ -30,8 +31,9 @@ export function ShareButton({ title, articleId }: { title: string; articleId: st
   return (
     <button
       onClick={handleShare}
-      className="flex-1 rounded-md bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
+      className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
     >
+      {copied ? <Check size={16} /> : <Share size={16} />}
       {copied ? "Copied!" : "Share"}
     </button>
   );

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Play } from "~/components/icons";
 
 interface Article {
   id: string;
@@ -59,9 +60,7 @@ function ArticleCard({ article }: { article: Article }) {
         {isVideo && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-5 w-5">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              <Play weight="Filled" className="ml-0.5 h-5 w-5" />
             </div>
           </div>
         )}
@@ -210,9 +209,7 @@ function ArticleRow({ article }: { article: Article }) {
         {isVideo && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="ml-0.5 h-3.5 w-3.5">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              <Play weight="Filled" className="ml-0.5 h-3.5 w-3.5" />
             </div>
           </div>
         )}

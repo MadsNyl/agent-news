@@ -99,7 +99,8 @@ function detectVideoContent(
   domain: string,
 ): VideoDetection {
   const ogType = $('meta[property="og:type"]').attr("content") ?? "";
-  const hasOgVideo = !!$('meta[property="og:video"]').attr("content") ||
+  const hasOgVideo =
+    !!$('meta[property="og:video"]').attr("content") ||
     !!$('meta[property="og:video:url"]').attr("content");
   const isOgVideo = ogType.startsWith("video");
 
@@ -127,8 +128,8 @@ function detectVideoContent(
             );
             if (match) {
               duration =
-                (parseInt(match[1] ?? "0") * 3600) +
-                (parseInt(match[2] ?? "0") * 60) +
+                parseInt(match[1] ?? "0") * 3600 +
+                parseInt(match[2] ?? "0") * 60 +
                 parseInt(match[3] ?? "0");
             }
           }
@@ -341,6 +342,7 @@ export async function createArticle(
     contentType?: ContentType;
     videoEmbedUrl?: string | null;
     videoDuration?: number | null;
+    embedding?: number[] | null;
   },
   userId: string,
 ) {
@@ -376,6 +378,12 @@ export async function createArticle(
       videoDuration: input.videoDuration ?? null,
     },
   });
+
+  // Embedding is an unsupported pgvector column, so set it with raw SQL.
+  if (input.embedding && input.embedding.length > 0) {
+    const vec = `[${input.embedding.join(",")}]`;
+    await db.$executeRaw`UPDATE "Article" SET "embedding" = ${vec}::vector WHERE id = ${article.id}::uuid`;
+  }
 
   if (input.tags && input.tags.length > 0) {
     for (const tagName of input.tags) {
@@ -436,14 +444,20 @@ export async function listArticles(
     where,
     orderBy: [{ publishedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }],
     take: limit + 1,
-    include: { tags: { include: { tag: true } }, submittedBy: { select: { name: true } } },
+    include: {
+      tags: { include: { tag: true } },
+      submittedBy: { select: { name: true } },
+    },
   });
 
   const hasMore = articles.length > limit;
   const items = hasMore ? articles.slice(0, limit) : articles;
   const lastItem = items[items.length - 1]!;
   const nextCursor = hasMore
-    ? { publishedAt: lastItem.publishedAt ?? lastItem.createdAt, id: lastItem.id }
+    ? {
+        publishedAt: lastItem.publishedAt ?? lastItem.createdAt,
+        id: lastItem.id,
+      }
     : undefined;
 
   return { items, nextCursor };
@@ -510,7 +524,10 @@ export async function searchArticles(
         where: { articleId: { in: articleIds } },
         include: { tag: true },
       });
-      const tagsByArticle = new Map<string, Array<{ tag: { id: string; name: string; slug: string } }>>();
+      const tagsByArticle = new Map<
+        string,
+        Array<{ tag: { id: string; name: string; slug: string } }>
+      >();
       for (const at of articleTags) {
         const existing = tagsByArticle.get(at.articleId) ?? [];
         existing.push({ tag: at.tag });
@@ -557,7 +574,10 @@ export async function searchArticles(
     where: { articleId: { in: articleIds } },
     include: { tag: true },
   });
-  const tagsByArticle = new Map<string, Array<{ tag: { id: string; name: string; slug: string } }>>();
+  const tagsByArticle = new Map<
+    string,
+    Array<{ tag: { id: string; name: string; slug: string } }>
+  >();
   for (const at of articleTags) {
     const existing = tagsByArticle.get(at.articleId) ?? [];
     existing.push({ tag: at.tag });
@@ -593,10 +613,7 @@ export async function getArticleByUrl(db: PrismaClient, url: string) {
   });
 }
 
-export async function listTags(
-  db: PrismaClient,
-  contentType?: ContentType,
-) {
+export async function listTags(db: PrismaClient, contentType?: ContentType) {
   if (contentType) {
     const tags = await db.tag.findMany({
       where: {
@@ -667,7 +684,10 @@ export async function getCompanyByDomain(db: PrismaClient, domain: string) {
     where: { domain },
     include: {
       articles: {
-        orderBy: [{ publishedAt: { sort: "desc", nulls: "last" } }, { id: "desc" }],
+        orderBy: [
+          { publishedAt: { sort: "desc", nulls: "last" } },
+          { id: "desc" },
+        ],
         include: {
           tags: { include: { tag: true } },
           submittedBy: { select: { name: true } },
@@ -675,6 +695,39 @@ export async function getCompanyByDomain(db: PrismaClient, domain: string) {
       },
     },
   });
+}
+
+export async function findSimilarArticles(
+  db: PrismaClient,
+  embedding: number[],
+  opts: { threshold?: number; limit?: number } = {},
+) {
+  if (embedding.length === 0) return [];
+
+  const vec = `[${embedding.join(",")}]`;
+  const limit = opts.limit ?? 5;
+  const threshold = opts.threshold ?? 0;
+
+  const rows = await db.$queryRaw<
+    Array<{
+      id: string;
+      url: string;
+      title: string;
+      sourceDomain: string;
+      similarity: number;
+    }>
+  >(Prisma.sql`
+    SELECT a.id, a.url, a.title, a."sourceDomain",
+           1 - (a."embedding" <=> ${vec}::vector) AS similarity
+    FROM "Article" a
+    WHERE a."embedding" IS NOT NULL
+    ORDER BY a."embedding" <=> ${vec}::vector
+    LIMIT ${limit}
+  `);
+
+  return rows
+    .map((r) => ({ ...r, similarity: Number(r.similarity) }))
+    .filter((r) => r.similarity >= threshold);
 }
 
 export async function getRelatedArticles(

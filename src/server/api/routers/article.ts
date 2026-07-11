@@ -14,6 +14,7 @@ import {
   searchArticles,
   getArticleById,
   getRelatedArticles,
+  findSimilarArticles,
   listTags,
   adminListContent,
   deleteArticle,
@@ -57,6 +58,7 @@ export const articleRouter = createTRPCRouter({
         contentType: z.nativeEnum(ContentType).optional(),
         videoEmbedUrl: z.string().nullish(),
         videoDuration: z.number().int().nullish(),
+        embedding: z.array(z.number()).length(768).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -130,9 +132,24 @@ export const articleRouter = createTRPCRouter({
       );
     }),
 
+  findSimilar: protectedProcedure
+    .input(
+      z.object({
+        embedding: z.array(z.number()).length(768),
+        threshold: z.number().min(0).max(1).optional(),
+        limit: z.number().min(1).max(20).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return findSimilarArticles(ctx.db, input.embedding, {
+        threshold: input.threshold,
+        limit: input.limit,
+      });
+    }),
+
   checkUrls: protectedProcedure
-    .input(z.object({ urls: z.array(z.string().url()).max(500) }))
-    .query(async ({ ctx, input }) => {
+    .input(z.object({ urls: z.array(z.string().url()).max(2000) }))
+    .mutation(async ({ ctx, input }) => {
       const allVariants = input.urls.flatMap(urlVariants);
       const existing = await ctx.db.article.findMany({
         where: { url: { in: allVariants } },

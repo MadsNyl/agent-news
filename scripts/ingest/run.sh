@@ -14,4 +14,7 @@ else
   echo "[$(date)] Ollama started" >> "$LOG"
 fi
 
+# Ensure the embedding model is present (no-op once pulled).
+ollama pull "${OLLAMA_EMBED_MODEL:-nomic-embed-text}" >> "$LOG" 2>&1
+
 bun run scripts/ingest/main.ts >> "$LOG" 2>&1
